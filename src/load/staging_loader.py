@@ -1,48 +1,34 @@
 from psycopg2.extras import Json
-from src.utils.db import get_connection
+from src.utils.db import get_db_cursor
 
 
 def load_raw_users(run_id, source, users):
-    insert_stg_users_raw_query = """
-        INSERT INTO stg_users_raw(run_id, source, raw_record)
-        VALUES (%s, %s, %s)
-    """
-
-    connection = get_connection()
-    cursor = connection.cursor()
-
-    for user in users:
-        cursor.execute(
-            insert_stg_users_raw_query,
-            (run_id, source, Json(user))
-        )
-
-    connection.commit()
-
-    cursor.close()
-    connection.close()
+    with get_db_cursor() as (_, cursor):
+        for user in users:
+            cursor.execute(
+                """
+                INSERT INTO stg_users_raw(run_id, source, raw_record)
+                VALUES (%s, %s, %s)
+                """,
+                (run_id, source, Json(user))
+            )
 
     return len(users)
 
 
 def get_staged_users(run_id):
-    connection = get_connection()
-    cursor = connection.cursor()
+    with get_db_cursor() as (_, cursor):
+        cursor.execute(
+            """
+            SELECT id, raw_record
+            FROM stg_users_raw
+            WHERE run_id = %s
+            ORDER BY id;
+            """,
+            (run_id,)
+        )
 
-    cursor.execute(
-        """
-        SELECT id, raw_record
-        FROM stg_users_raw
-        WHERE run_id = %s
-        ORDER BY id;
-        """,
-        (run_id,)
-    )
-
-    rows = cursor.fetchall()
-
-    cursor.close()
-    connection.close()
+        rows = cursor.fetchall()
 
     staged_users = []
 

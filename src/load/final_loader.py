@@ -1,4 +1,4 @@
-from src.utils.db import get_connection
+from src.utils.db import get_db_cursor
 
 
 def load_final_users(run_id, final_candidates):
@@ -40,45 +40,18 @@ def load_final_users(run_id, final_candidates):
     rows_updated = 0
     rows_unchanged = 0
 
-    connection = get_connection()
-    cursor = connection.cursor()
+    with get_db_cursor() as (_, cursor):
+        for candidate in final_candidates:
+            cursor.execute(select_query, (candidate["external_id"],))
 
-    for candidate in final_candidates:
-        cursor.execute(select_query, (candidate["external_id"],))
+            existing = cursor.fetchone()
 
-        existing = cursor.fetchone()
-
-        if existing is None:
-            rows_inserted += 1
-
-            cursor.execute(
-                insert_query, (
-                    candidate["external_id"],
-                    candidate["name"],
-                    candidate["username"],
-                    candidate["email"],
-                    candidate["phone"],
-                    candidate["website"],
-                    candidate["company_name"],
-                    run_id,
-                )
-            )
-        else:
-            new_values = (
-                candidate["name"],
-                candidate["username"],
-                candidate["email"],
-                candidate["phone"],
-                candidate["website"],
-                candidate["company_name"],
-            )
-
-            if existing != new_values:
-                rows_updated += 1
+            if existing is None:
+                rows_inserted += 1
 
                 cursor.execute(
-                    update_query,
-                    (
+                    insert_query, (
+                        candidate["external_id"],
                         candidate["name"],
                         candidate["username"],
                         candidate["email"],
@@ -86,16 +59,36 @@ def load_final_users(run_id, final_candidates):
                         candidate["website"],
                         candidate["company_name"],
                         run_id,
-                        candidate["external_id"],
                     )
                 )
             else:
-                rows_unchanged += 1
+                new_values = (
+                    candidate["name"],
+                    candidate["username"],
+                    candidate["email"],
+                    candidate["phone"],
+                    candidate["website"],
+                    candidate["company_name"],
+                )
 
-    connection.commit()
+                if existing != new_values:
+                    rows_updated += 1
 
-    cursor.close()
-    connection.close()
+                    cursor.execute(
+                        update_query,
+                        (
+                            candidate["name"],
+                            candidate["username"],
+                            candidate["email"],
+                            candidate["phone"],
+                            candidate["website"],
+                            candidate["company_name"],
+                            run_id,
+                            candidate["external_id"],
+                        )
+                    )
+                else:
+                    rows_unchanged += 1
 
     return {
         "rows_inserted": rows_inserted,
