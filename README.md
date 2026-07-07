@@ -684,6 +684,7 @@ This confirms that the pipeline is working and the final load is idempotent.
 
 Possible improvements:
 
+- dockerize the Python pipeline runtime and add a pipeline service to `docker-compose.yml`;
 - add full Airflow Docker Compose runtime;
 - add migration tooling;
 - replace explicit final load logic with PostgreSQL `ON CONFLICT`;
