@@ -1,0 +1,41 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Environment variables
+.env
+.env.*
+!.env.example
+
+# Pytest
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Logs
+*.log
+logs/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE / VS Code
+.vscode/*
+!.vscode/settings.json
+
+# Airflow local files
+airflow.db
+airflow.cfg
+webserver_config.py
+standalone_admin_password.txt
+
+# Temporary files
+tmp/
+temp/
