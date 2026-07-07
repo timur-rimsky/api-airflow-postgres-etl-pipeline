@@ -4,7 +4,7 @@ from src.extract.users_api import fetch_users
 from src.transform.demo_data import prepare_users_for_pipeline
 import src.load.staging_loader as staging_loader
 from src.validate.users_validator import prepare_clean_and_rejected_records
-import src.load.clean_rejected_loader as cr_loader
+from src.load.clean_rejected_loader import load_clean_and_rejected_records
 from src.transform.users_deduplication import deduplicate_users
 from src.load.final_loader import load_final_users
 
@@ -34,11 +34,13 @@ def run_users_pipeline():
         prepared = prepare_clean_and_rejected_records(staged_users)
 
         failed_step = "clean_rejected_load"
-        rows_clean = cr_loader.load_clean_records(run_id, prepared["clean_records"])
-        rows_rejected = cr_loader.load_rejected_records(
+        clean_rejected_rows = load_clean_and_rejected_records(
             run_id,
-            prepared["rejected_records"],
+            prepared["clean_records"],
+            prepared["rejected_records"]
         )
+        rows_clean = clean_rejected_rows["rows_clean"]
+        rows_rejected = clean_rejected_rows["rows_rejected"]
 
         failed_step = "deduplication"
         deduplicated = deduplicate_users(prepared["clean_records"])
