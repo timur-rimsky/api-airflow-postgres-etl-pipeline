@@ -1,7 +1,12 @@
+import pytest
+
 from src.load.final_loader import load_final_users
-from src.utils.db import get_connection
+from src.utils.db import get_db_cursor
 from src.utils.logger import start_run_log
 from src.utils.run_id import generate_run_id
+
+
+pytestmark = pytest.mark.integration
 
 
 TEST_SOURCE = "pytest_final_loader"
@@ -9,29 +14,22 @@ TEST_EXTERNAL_ID = 999001
 
 
 def cleanup_test_data():
-    connection = get_connection()
-    cursor = connection.cursor()
+    with get_db_cursor() as (_, cursor):
+        cursor.execute(
+            """
+            DELETE FROM final_users
+            WHERE external_id = %s;
+            """,
+            (TEST_EXTERNAL_ID,),
+        )
 
-    cursor.execute(
-        """
-        DELETE FROM final_users
-        WHERE external_id = %s;
-        """,
-        (TEST_EXTERNAL_ID,),
-    )
-
-    cursor.execute(
-        """
-        DELETE FROM etl_load_logs
-        WHERE source = %s;
-        """,
-        (TEST_SOURCE,),
-    )
-
-    connection.commit()
-
-    cursor.close()
-    connection.close()
+        cursor.execute(
+            """
+            DELETE FROM etl_load_logs
+            WHERE source = %s;
+            """,
+            (TEST_SOURCE,),
+        )
 
 
 def test_load_final_users_is_idempotent_for_same_record():
